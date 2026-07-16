@@ -189,57 +189,50 @@ export default function DashboardPage() {
   useEffect(() => {
     let mounted = true;
     (async () => { 
-      // 1) Load profile (name) so header reflects backend auth.
+      setLoading(true);
+      setError(null);
+      setNotificationsLoading(true);
+
       try {
-        const p = await api.auth.profile();
-        if (mounted) {
-          setProfile(p.user);
-        }
-      } catch {
-        // Non-fatal here: if the token is actually invalid, the tasks call
-        // right below will get the 401 and the global AuthEventHandler
-        // (see App.tsx) will clear the token and redirect to Login.
-      }
-    
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await api.tasks.list();
-        const mapped: Task[] = res.tasks.map((t: any) => ({
+        // Fetch profile, tasks, notes, and notifications in parallel
+        const [profileRes, tasksRes, notesRes, notifRes] = await Promise.all([
+          api.auth.profile().catch(() => null), // Non-fatal
+          api.tasks.list(),
+          api.notes.list().catch(() => null), // Non-fatal
+          api.notifications.list({ limit: 3 }).catch(() => null), // Non-fatal
+        ]);
+
+        if (!mounted) return;
+
+        // 1. Profile
+        if (profileRes) setProfile(profileRes.user);
+
+        // 2. Tasks
+        const mappedTasks: Task[] = tasksRes.tasks.map((t: any) => ({
           id: Number(t.id),
           title: String(t.title),
           due: String(t.dueDate ?? t.due_date ?? ''),
           done: Boolean(t.completed),
         }));
+        setTasks(mappedTasks);
 
-        if (mounted) setTasks(mapped);
+        // 3. Notes Count
+        if (notesRes) setNotesCount(notesRes.notes.length);
+
+        // 4. Notifications
+        if (notifRes) setNotifications(notifRes.notifications);
+
       } catch (e: unknown) {
-        if (!mounted) return;
-        // 401s are handled centrally (token cleared + redirect in flight);
-        // avoid flashing an inline error while that happens.
-        if (e instanceof ApiRequestError && e.status === 401) return;
-        setError(e instanceof Error ? e.message : String(e));
+        if (e instanceof ApiRequestError && e.status === 401) {
+          // Auth errors are handled globally by AuthEventHandler, no need to set local error
+          return;
+        }
+        if (mounted) setError(e instanceof Error ? e.message : String(e));
       } finally {
-        if (mounted) setLoading(false);
-      }
-
-      // 3) Real notes count for the stats card — the backend never actually
-      // populates profile.stats, so this was always hardcoded to 0 before.
-      try {
-        const notesRes = await api.notes.list();
-        if (mounted) setNotesCount(notesRes.notes.length);
-      } catch {
-        // Non-fatal — stats card just falls back to showing 0.
-      }
-
-      // 4) Recent notifications preview for the dashboard card.
-      try {
-        const notifRes = await api.notifications.list({ limit: 3 });
-        if (mounted) setNotifications(notifRes.notifications);
-      } catch {
-        // Non-fatal — section just renders its empty state.
-      } finally {
-        if (mounted) setNotificationsLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setNotificationsLoading(false);
+        }
       }
     })();
     return () => {
