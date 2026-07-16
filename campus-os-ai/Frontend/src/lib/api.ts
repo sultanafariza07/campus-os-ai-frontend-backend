@@ -49,14 +49,17 @@ export function clearToken(): void {
 // In production (Vercel), VITE_API_BASE_URL must be set to the Render backend URL.
 
 function getApiBaseUrl(): string {
-  const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
-  if (!baseUrl) {
-    // In development, this is fine and we can rely on the Vite proxy.
-    // In production, this is a configuration error.
-    return '/api'
-  }
-  return baseUrl
+  const baseUrl = (import.meta as any)?.env?.VITE_API_BASE_URL?.trim?.() as string | undefined
+
+
+  // If VITE_API_BASE_URL is not set, fall back to relative /api.
+  // IMPORTANT: In production on Vercel, calling relative /api will hit this Vercel deployment,
+  // which breaks auth. Set VITE_API_BASE_URL to your Render backend URL.
+  if (!baseUrl) return '/api'
+
+  return baseUrl.replace(/\/$/, '')
 }
+
 
 async function request<T>(
   path: string,
