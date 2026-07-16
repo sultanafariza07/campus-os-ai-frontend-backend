@@ -19,7 +19,16 @@ app.use(helmet({
   // already applies (X-Content-Type-Options, X-Frame-Options, etc).
   crossOriginResourcePolicy: { policy: 'same-site' },
 }))
-app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }))
+app.use(cors({
+  origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    // Allow non-browser clients (e.g., curl, Render health checks) that don't send an Origin header.
+    if (!origin) return cb(null, true)
+    // Allow explicit configured origin (e.g. production frontend URL).
+    if (config.CORS_ORIGIN && origin === config.CORS_ORIGIN) return cb(null, true)
+    return cb(new Error(`CORS blocked: origin=${origin}`))
+  },
+  credentials: true,
+}))
 app.use(express.json({ limit: '1mb' }))
 app.use(requestLogger)
 
