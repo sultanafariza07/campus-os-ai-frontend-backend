@@ -46,14 +46,16 @@ export function clearToken(): void {
 
 // ─── Base URL / Fetch ─────────────────────────────────────────────────────────
 // Vite dev server can proxy /api -> backend, so we call relative /api paths.
-// If you set VITE_API_BASE_URL it will be used; otherwise we rely on /api proxy.
-
-const BASE = '/api'
+// In production (Vercel), VITE_API_BASE_URL must be set to the Render backend URL.
 
 function getApiBaseUrl(): string {
-  const v = (import.meta as any)?.env?.VITE_API_BASE_URL as string | undefined
-  const trimmed = typeof v === 'string' ? v.trim() : ''
-  return trimmed || BASE
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim()
+  if (!baseUrl) {
+    // In development, this is fine and we can rely on the Vite proxy.
+    // In production, this is a configuration error.
+    return '/api'
+  }
+  return baseUrl
 }
 
 async function request<T>(
