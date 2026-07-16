@@ -194,11 +194,6 @@ export default function DashboardPage() {
         const p = await api.auth.profile();
         if (mounted) {
           setProfile(p.user);
-          // Backend profile DTO may not include stats; dashboard uses real notesCount + fallback stats.
-          setStats((prev) => ({
-            ...prev,
-            ...(p.user.stats ?? {}),
-          }));
         }
       } catch {
         // Non-fatal here: if the token is actually invalid, the tasks call

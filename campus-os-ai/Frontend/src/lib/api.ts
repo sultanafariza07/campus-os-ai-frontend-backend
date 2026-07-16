@@ -117,6 +117,8 @@ export interface UserProfileDto {
   email: string
   branch?: string | null
   year?: string | null
+  avatar?: string | null
+  createdAt?: string
 }
 
 export const api = {
