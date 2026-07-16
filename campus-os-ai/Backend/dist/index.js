@@ -16,15 +16,19 @@ app.use(helmet({
     // already applies (X-Content-Type-Options, X-Frame-Options, etc).
     crossOriginResourcePolicy: { policy: 'same-site' },
 }));
+const allowedOrigins = [
+    'http://localhost:5173', // Local dev frontend
+    'https://campus-os-ai-frontend-backend-beryl.vercel.app', // Deployed Vercel frontend
+    config.CORS_ORIGIN, // Keep support for the environment variable
+].filter(Boolean);
 app.use(cors({
     origin: (origin, cb) => {
         // Allow non-browser clients (e.g., curl, Render health checks) that don't send an Origin header.
         if (!origin)
             return cb(null, true);
-        // Allow explicit configured origin (e.g. production frontend URL).
-        if (config.CORS_ORIGIN && origin === config.CORS_ORIGIN)
+        if (allowedOrigins.includes(origin))
             return cb(null, true);
-        return cb(new Error(`CORS blocked: origin=${origin}`));
+        return cb(new Error(`CORS policy does not allow access from origin ${origin}`));
     },
     credentials: true,
 }));
