@@ -22,7 +22,8 @@ app.use(helmet({
 
 const allowedOrigins = [
   'http://localhost:5173', // Local dev frontend
-  'https://campus-os-ai-frontend-backend-beryl.vercel.app', // Deployed Vercel frontend
+  // The user's Vercel deployment URL
+  'https://campus-os-ai-frontend-backend-chi.vercel.app',
   config.CORS_ORIGIN, // Keep support for the environment variable
 ].filter(Boolean) as string[]
 
