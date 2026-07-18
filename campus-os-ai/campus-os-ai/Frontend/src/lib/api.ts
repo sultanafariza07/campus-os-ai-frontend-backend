@@ -133,9 +133,9 @@ export interface UserProfileDto {
 export const api = {
   auth: {
     login(body: { email: string; password: string }) {
-      return request<{ token: string; user: UserProfileDto }>('/auth/login', {
+      return request<{ token: string; user: UserProfileDto }>('/auth/login', 
         { method: 'POST', body, auth: false }
-      })
+      )
     },
 
     register(body: {
@@ -146,7 +146,7 @@ export const api = {
       year?: string
     }) {
       return request<{ token: string; user: UserProfileDto }>('/auth/register', {
-        method: 'POST',
+        method: 'POST', 
         body, auth: false
       })
     },
@@ -158,9 +158,9 @@ export const api = {
       year?: string
       sequence: string[]
     }) {
-      return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', {
+      return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', 
         { method: 'POST', body, auth: false }
-      })
+      )
     },
 
     profile() {
@@ -185,9 +185,9 @@ export const api = {
     },
 
     gestureLogin(body: { email: string; sequence: string[] }) {
-      return request<{ token: string; user: UserProfileDto }>('/auth/gesture/login', {
+      return request<{ token: string; user: UserProfileDto }>('/auth/gesture/login', 
         { method: 'POST', body, auth: false }
-      })
+      )
     },
 
     gestureRegister(body: { sequence: string[] }) {
