@@ -21,17 +21,13 @@ export function errorHandler(err: any, _req: Request, res: Response, next: NextF
   }
 
   if (isPgError(err)) {
-    // In development, we want the full error to be passed to the final
-    // handler so we can see the stack trace and details on the client.
-    // In production, we return a generic error for security.
-    if (process.env.NODE_ENV === 'production') {
-      // Examples: 42P01 table missing, 42703 column missing, etc.
-      const details = err?.detail ?? err?.hint ?? err?.message
-      return res.status(500).json({
-        error: 'Internal server error',
-        details: typeof details === 'string' ? details : 'Database error'
-      })
-    }
+    // For database errors, provide the detail/hint from the error if available.
+    // This is safe as it doesn't leak connection details or stack traces.
+    const details = err?.detail ?? err?.hint ?? err?.message
+    return res.status(500).json({
+      error: 'Internal server error',
+      details: typeof details === 'string' ? details : 'A database error occurred.'
+    })
   }
 
   // If we can't handle it here, pass it to the next error handler

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { query } from '../db/index.js'
+reate mimport { query } from '../db/index.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 

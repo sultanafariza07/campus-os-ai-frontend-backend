@@ -196,10 +196,10 @@ export default function DashboardPage() {
       try {
         // Fetch profile, tasks, notes, and notifications in parallel
         const [profileRes, tasksRes, notesRes, notifRes] = await Promise.all([
-          api.auth.profile().catch(() => null), // Non-fatal
+          api.auth.profile().catch(() => null), // Non-fatal, dashboard can proceed without it
           api.tasks.list(),
-          api.notes.list().catch(() => null), // Non-fatal
-          api.notifications.list({ limit: 3 }).catch(() => null), // Non-fatal
+          api.notes.list().catch(() => ({ notes: [] })), // Non-fatal, fallback to 0 notes
+          api.notifications.list({ limit: 3 }).catch(() => ({ notifications: [] })), // Non-fatal, fallback to empty list
         ]);
 
         if (!mounted) return;
@@ -223,6 +223,7 @@ export default function DashboardPage() {
         if (notifRes) setNotifications(notifRes.notifications);
 
       } catch (e: unknown) {
+        // This will now only catch errors from required requests, like api.tasks.list()
         if (e instanceof ApiRequestError && e.status === 401) {
           // Auth errors are handled globally by AuthEventHandler, no need to set local error
           return;

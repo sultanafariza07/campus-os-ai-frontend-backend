@@ -12,6 +12,8 @@ export default defineConfig({
         // Local dev backend (edit if you want to point to a deployed backend)
         target: 'http://localhost:3001',
         changeOrigin: true,
+        // The rewrite is currently missing, which can cause the /api prefix to be stripped.
+        // Let's ensure it's preserved.
       },
 
     },

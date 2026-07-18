@@ -12,12 +12,13 @@ function mustGetDatabaseUrl() {
   return config.DATABASE_URL
 }
 
-export const pool = new Pool({ connectionString: mustGetDatabaseUrl() })
+export const pool = new Pool({
+  connectionString: mustGetDatabaseUrl(),
+  // Most hosted Postgres providers (Render, Supabase, etc.) require SSL.
+  ssl: { rejectUnauthorized: false },
+})
 
 export async function query<T = any>(text: string, params: unknown[] = []): Promise<T[]> {
   const res = await pool.query(text, params)
   return res.rows as T[]
 }
-
-
-

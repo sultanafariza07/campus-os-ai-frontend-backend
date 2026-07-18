@@ -20,22 +20,37 @@ authRouter.post(
   '/register',
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body as { name?: string; email?: string; password?: string }
+    const { name, email, password, branch, year } = req.body as {
+      name?: string; email?: string; password?: string; branch?: string; year?: string
+    }
 
     if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
     if (name.trim().length > 255) return res.status(400).json({ error: 'name must be 255 characters or fewer' })
     if (!email?.trim()) return res.status(400).json({ error: 'email is required' })
     if (!EMAIL_RE.test(email.trim())) return res.status(400).json({ error: 'enter a valid email address' })
     if (!password || password.length < 8) return res.status(400).json({ error: 'password must be at least 8 chars' })
+    // Also validate branch and year, since the frontend sends them
+    if (branch !== undefined && branch.length > 100) return res.status(400).json({ error: 'branch must be 100 characters or fewer' })
+    if (year !== undefined && year.length > 50) return res.status(400).json({ error: 'year must be 50 characters or fewer' })
 
     const password_hash = await bcrypt.hash(password, 10)
 
     try {
-      const rows = await query<{ id: number }>(
-        'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
-        [name.trim(), email.trim().toLowerCase(), password_hash]
+      const rows = await query<{ id: number; name: string; email: string }>(
+        'INSERT INTO users (name, email, password_hash, branch, year) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, branch, year',
+        [name.trim(), email.trim().toLowerCase(), password_hash, branch ?? null, year ?? null]
       )
-      return res.status(201).json({ id: rows[0]?.id })
+      const user = rows[0]
+
+      // Generate a token to log the user in immediately
+      const token = jwt.sign({ sub: String(user.id) }, config.JWT_SECRET as jwt.Secret, {
+        expiresIn: config.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']
+      })
+
+      return res.status(201).json({
+        token,
+        user: { id: user.id, name: user.name, email: user.email, branch: user.branch, year: user.year }
+      })
     } catch (e: any) {
       // Unique constraint on email
       if (String(e?.code) === '23505') return res.status(409).json({ error: 'email already exists' })
@@ -98,8 +113,8 @@ authRouter.post(
     if (!email?.trim()) return res.status(400).json({ error: 'email is required' })
     if (!password) return res.status(400).json({ error: 'password is required' })
 
-    const users = await query<{ id: number; password_hash: string; name: string; email: string }>(
-      'SELECT id, name, email, password_hash FROM users WHERE email=$1 LIMIT 1',
+    const users = await query<{ id: number; password_hash: string; name: string; email: string; branch: string | null; year: string | null }>(
+      'SELECT id, name, email, password_hash, branch, year FROM users WHERE email=$1 LIMIT 1',
       [email.trim().toLowerCase()]
     )
 
@@ -115,7 +130,7 @@ authRouter.post(
 
     return res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email }
+      user: { id: user.id, name: user.name, email: user.email, branch: user.branch, year: user.year }
     })
   })
 )

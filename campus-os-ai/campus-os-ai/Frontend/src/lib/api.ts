@@ -51,11 +51,12 @@ export function clearToken(): void {
 function getApiBaseUrl(): string {
   const baseUrl = import.meta.env.VITE_API_URL?.trim()
 
-  // In development, we can fall back to the proxy.
   if (import.meta.env.DEV) {
-    return baseUrl || '/api'
+    // In dev, if VITE_API_URL is set, use it (with /api). Otherwise, fall back to the proxy.
+    return baseUrl ? `${baseUrl.replace(/\/$/, '')}/api` : '/api'
   }
 
+  // In production, VITE_API_URL is required.
   if (!baseUrl) {
     throw new Error('VITE_API_URL is not set for production build. Please set it in your Vercel environment variables.')
   }
@@ -132,10 +133,9 @@ export interface UserProfileDto {
 export const api = {
   auth: {
     login(body: { email: string; password: string }) {
-      return request<{ token: string; user: { id: number; name: string; email: string } }>(
-        '/auth/login',
+      return request<{ token: string; user: UserProfileDto }>('/auth/login', {
         { method: 'POST', body, auth: false }
-      )
+      })
     },
 
     register(body: {
@@ -145,7 +145,10 @@ export const api = {
       branch?: string
       year?: string
     }) {
-      return request<{ id: number }>('/auth/register', { method: 'POST', body, auth: false })
+      return request<{ token: string; user: UserProfileDto }>('/auth/register', {
+        method: 'POST',
+        body, auth: false
+      })
     },
 
     registerWithGesture(body: {
@@ -155,10 +158,9 @@ export const api = {
       year?: string
       sequence: string[]
     }) {
-      return request<{ token: string; user: { id: number; name: string; email: string } }>(
-        '/auth/register-gesture',
+      return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', {
         { method: 'POST', body, auth: false }
-      )
+      })
     },
 
     profile() {
@@ -183,10 +185,9 @@ export const api = {
     },
 
     gestureLogin(body: { email: string; sequence: string[] }) {
-      return request<{ token: string; user: { id: number; name: string; email: string } }>(
-        '/auth/gesture/login',
+      return request<{ token: string; user: UserProfileDto }>('/auth/gesture/login', {
         { method: 'POST', body, auth: false }
-      )
+      })
     },
 
     gestureRegister(body: { sequence: string[] }) {
