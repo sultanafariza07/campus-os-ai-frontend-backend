@@ -1,7 +1,10 @@
 import { Router } from 'express'
-reate mimport { query } from '../db/index.js'
+import { query } from '../db/index.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+
+
+
 
 export const notificationsRouter = Router()
 
