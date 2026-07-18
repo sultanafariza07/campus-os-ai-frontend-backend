@@ -36,7 +36,7 @@ authRouter.post(
     const password_hash = await bcrypt.hash(password, 10)
 
     try {
-      const rows = await query<{ id: number; name: string; email: string }>(
+      const rows = await query<{ id: number; name: string; email: string; branch: string | null; year: string | null }>(
         'INSERT INTO users (name, email, password_hash, branch, year) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, branch, year',
         [name.trim(), email.trim().toLowerCase(), password_hash, branch ?? null, year ?? null]
       )
