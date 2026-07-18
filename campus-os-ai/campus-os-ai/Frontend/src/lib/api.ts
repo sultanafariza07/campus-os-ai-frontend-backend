@@ -158,9 +158,9 @@ export const api = {
       year?: string
       sequence: string[]
     }) {
-      return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', 
-        { method: 'POST', body, auth: false }
-      )
+      return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', {
+        method: 'POST', body, auth: false
+      })
     },
 
     profile() {

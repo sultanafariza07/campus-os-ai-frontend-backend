@@ -202,8 +202,8 @@ export default function AirWritePassword({
 
   useEffect(() => {
     if (mode !== "writing") return;
-    setEditedPassword(chars.map((c) => c.char).join(""));
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+    setEditedPassword(chars.map((c) => c.char).join("")); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chars]);
 
   useEffect(() => {
     let cancelled = false;
