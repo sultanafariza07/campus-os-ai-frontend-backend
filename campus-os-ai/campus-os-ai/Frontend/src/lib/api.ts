@@ -292,7 +292,10 @@ export const api = {
       })
     },
     markToday(present: boolean) {
-      return this.mark("General", present ? "present" : "absent");
+      return request<{ attendance: AttendanceRecord }>('/attendance', {
+        method: 'POST',
+        body: { subject: 'General', status: present ? 'present' : 'absent' },
+      })
     },
   },
 
