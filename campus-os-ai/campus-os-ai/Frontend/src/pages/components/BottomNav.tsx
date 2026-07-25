@@ -61,22 +61,22 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-[#111118] border-t border-white/[0.07]">
       <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium">
         {TABS.map((item) => {
           const isActive = activeId === item.id;
-          const IconComponent = isActive ? item.ActiveIcon : item.Icon;
+          const IconComponent = item.ActiveIcon;
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => handleNavigate(item.path)}
-              className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 ${
-                isActive ? "text-blue-600" : "text-gray-500"
+              className={`inline-flex flex-col items-center justify-center px-5 transition-colors hover:bg-white/5 ${
+                isActive ? "text-[#A5A0FF]" : "text-[#4B5563]"
               }`}
             >
-              <IconComponent className="w-6 h-6 mb-1" />
-              <span className="text-sm">{item.label}</span>
+              <IconComponent className="w-5 h-5 mb-1" />
+              <span className="text-[10px]">{item.label}</span>
             </button>
           );
         })}

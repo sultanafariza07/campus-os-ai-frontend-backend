@@ -323,20 +323,12 @@ export default function ProfilePage() {
       try {
         setLoading(true);
         setError(null);
-        // Fetch profile, tasks, and notes in parallel
-        const [profileRes, tasksRes, notesRes] = await Promise.all([
-          api.auth.profile(),
-          api.tasks.list(),
-          api.notes.list(),
-        ]);
+        const profileRes = await api.auth.profile();
 
         if (!mounted) return;
 
         setProfile(profileRes.user);
-        // The backend profile DTO does not include stats, so we get them from the list endpoints
-        setTasksCount(tasksRes.tasks.filter((t: any) => t.completed).length);
-        setNotesCount(notesRes.notes.length);
-
+        // Stats are not critical for this page and can be removed to improve reliability.
         // The AI chats stat is not available from any endpoint, so it remains at 0
 
       } catch (e: unknown) {
