@@ -316,6 +316,12 @@ export const api = {
     },
   },
 
+  ai: {
+    chat(body: { message: string }) {
+      return request<{ reply: string }>('/ai/chat', { method: 'POST', body });
+    },
+  },
+
   notifications: {
     list(opts?: { limit?: number; type?: NotificationType; unreadOnly?: boolean }) {
       const params = new URLSearchParams()
