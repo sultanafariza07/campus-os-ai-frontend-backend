@@ -133,11 +133,8 @@ export interface UserProfileDto {
 export interface AttendanceRecord {
   id: number;
   date: string;
-  subject: string;
-  status: "Present" | "Absent" | "Late";
-  createdAt: string;
+  present: boolean;
 }
-
 
 export const api = {
   auth: {
@@ -285,13 +282,13 @@ export const api = {
 
   attendance: {
     list(limit = 30) {
-      return request<{ attendance: Array<{ id: number; date: string; present: boolean }> }>(
+      return request<{ attendance: AttendanceRecord[] }>(
         `/attendance?limit=${limit}`,
         { method: 'GET' }
       )
     },
     markToday(present: boolean) {
-      return request<{ attendance: { id: number; date: string; present: boolean } }>(
+      return request<{ attendance: AttendanceRecord }>(
         '/attendance',
         { method: 'POST', body: { present } }
       )

@@ -1,173 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, ApiRequestError } from "../lib/api";
+import { api, ApiRequestError, type AttendanceRecord } from "../lib/api";
 import {
   HiOutlineArrowLeft,
-  HiOutlinePlus,
-  HiOutlinePencil,
-  HiOutlineTrash,
   HiOutlineCalendar,
   HiCalendar,
   HiCheckCircle,
   HiExclamationCircle,
-  HiMinusCircle,
 } from "react-icons/hi";
 import { SkeletonRow } from "./components/Skeleton";
 import { Toast, type ToastKind } from "./components/Toast";
-
-type Status = "Present" | "Absent" | "Late";
-
-interface AttendanceRecord {
-  id: number;
-  date: string;
-  subject: string;
-  status: Status;
-  createdAt: string;
-}
-
-function capitalize(s: string): string {
-  if (!s) return "";
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function AttendanceModal({
-  record,
-  onSave,
-  onCancel,
-  loading,
-  error,
-}: {
-  record: Partial<AttendanceRecord> | null;
-  onSave: (data: {
-    date: string;
-    subject: string;
-    status: Status;
-  }) => Promise<void>;
-  onCancel: () => void;
-  loading: boolean;
-  error: string | null;
-}) {
-  // Helper to format date as 'yyyy-MM-dd' for the input
-  const formatDateForInput = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  const [date, setDate] = useState(() => {
-    // When editing, the date from the record might be a full ISO string.
-    // new Date() can be off-by-one depending on timezone.
-    return record?.date ? record.date.split('T')[0] : formatDateForInput(new Date());
-  });
-  const [subject, setSubject] = useState(record?.subject ?? "");
-  const [status, setStatus] = useState<Status>(record?.status ?? "Present");
-
-  const handleSave = () => {
-    if (date && subject) {
-      onSave({ date, subject, status });
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8 sm:items-center">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onCancel}
-        aria-hidden="true"
-      />
-      <div className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#16161F] p-6 shadow-2xl">
-        <h3 className="text-base font-semibold text-white mb-1">
-          {record?.id ? "Edit" : "Add"} Attendance
-        </h3>
-        <p className="text-sm text-[#64748B] mb-6">
-          {record?.id
-            ? "Update the details for this attendance record."
-            : "Log a new attendance record."}
-        </p>
-
-        <div className="space-y-3">
-          <label className="block">
-            <span className="text-xs text-[#64748B]">Date</span>
-            <input
-              type="date"
-              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs text-[#64748B]">Subject</span>
-            <input
-              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs text-[#64748B]">Status</span>
-            <select
-              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#6C63FF]"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as Status)}
-            >
-              <option value="Present">Present</option>
-              <option value="Absent">Absent</option>
-              <option value="Late">Late</option>
-            </select>
-          </label>
-          {error && <div className="text-xs text-red-400">{error}</div>}
-        </div>
-
-        <div className="flex gap-3 mt-6">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-[#94A3B8] hover:bg-white/10 transition-colors"
-            disabled={loading}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="flex-1 rounded-xl bg-[#6C63FF]/90 py-2.5 text-sm font-semibold text-white hover:bg-[#6C63FF] transition-colors disabled:opacity-60"
-            disabled={loading || !date || !subject}
-          >
-            {loading ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function AttendancePage() {
   const navigate = useNavigate();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalRecord, setModalRecord] =
-    useState<Partial<AttendanceRecord> | null>(null);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
+  const [markingLoading, setMarkingLoading] = useState(false);
   const [toast, setToast] = useState<{ kind: ToastKind; text: string } | null>(null);
-
-  const STATUS_STYLES: Record<
-    Status,
-    { icon: React.ElementType; bg: string; text: string }
-  > = {
-    Present: {
-      icon: HiCheckCircle,
-      bg: "bg-green-500/10",
-      text: "text-green-400",
-    },
-    Absent: {
-      icon: HiExclamationCircle,
-      bg: "bg-red-500/10",
-      text: "text-red-400",
-    },
-    Late: { icon: HiMinusCircle, bg: "bg-yellow-500/10", text: "text-yellow-400" },
-  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -175,7 +25,7 @@ export default function AttendancePage() {
       setError(null);
       const res = await api.attendance.list();
       // Sort records by date, most recent first.
-      const sorted = res.attendance.sort((a: AttendanceRecord, b: AttendanceRecord) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const sorted = res.attendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setAttendance(sorted);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
@@ -199,42 +49,18 @@ export default function AttendancePage() {
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  const handleSave = async (data: {
-    date: string;
-    subject:string;
-    status: Status;
-  }) => {
-    setModalLoading(true);
-    setModalError(null);
+  const handleMarkToday = async (present: boolean) => {
+    setMarkingLoading(true);
     try {
-      if (modalRecord?.id) {
-        await api.attendance.update(modalRecord.id, data);
-        setToast({ kind: "success", text: "Record updated" });
-      } else {
-        await api.attendance.create(data);
-        setToast({ kind: "success", text: "Record added" });
-      }
-      setModalRecord(null);
+      await api.attendance.markToday(present);
+      setToast({ kind: "success", text: `Marked as ${present ? 'Present' : 'Absent'}` });
       await fetchData();
     } catch (e) {
-      setModalError(e instanceof Error ? e.message : "Failed to save record.");
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    // Optimistic deletion for better UX
-    const originalAttendance = attendance;
-    setAttendance(attendance.filter((r) => r.id !== id));
-    try {
-      await api.attendance.delete(id);
-      setToast({ kind: "success", text: "Record deleted" });
-    } catch (e) {
-      setAttendance(originalAttendance);
       if (!(e instanceof ApiRequestError && e.status === 401)) {
-        setToast({ kind: "error", text: "Failed to delete record" });
+        setToast({ kind: "error", text: "Failed to mark attendance" });
       }
+    } finally {
+      setMarkingLoading(false);
     }
   };
 
@@ -274,13 +100,24 @@ export default function AttendancePage() {
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setModalRecord({})}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#6C63FF] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#6C63FF]/20 transition-all hover:bg-[#7C6FFF] active:scale-[0.98]"
-        >
-          <HiOutlinePlus className="w-4 h-4" /> Add Record
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleMarkToday(true)}
+            disabled={markingLoading}
+            className="flex items-center justify-center gap-2 rounded-xl bg-green-500/90 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-green-500/20 transition-all hover:bg-green-500 active:scale-[0.98] disabled:opacity-60"
+          >
+            <HiCheckCircle className="w-4 h-4" /> Mark Present
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMarkToday(false)}
+            disabled={markingLoading}
+            className="flex items-center justify-center gap-2 rounded-xl bg-red-500/90 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-500 active:scale-[0.98] disabled:opacity-60"
+          >
+            <HiExclamationCircle className="w-4 h-4" /> Mark Absent
+          </button>
+        </div>
 
         {loading ? (
           <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl overflow-hidden">
@@ -306,31 +143,24 @@ export default function AttendancePage() {
         ) : (
           <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl">
             {attendance.map((record) => {
-              const statusKey = record.status;
-              const { icon: Icon, bg, text } = STATUS_STYLES[statusKey];
+              const Icon = record.present ? HiCheckCircle : HiExclamationCircle;
+              const bg = record.present ? "bg-green-500/10" : "bg-red-500/10";
+              const text = record.present ? "text-green-400" : "text-red-400";
               return (
                 <div
                   key={record.id}
                   className="flex items-center gap-3 p-4"
                 >
                   <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg}`}>
-                    <Icon className={`w-5 h-5 ${text}`} />
+                    <Icon className={`h-5 w-5 ${text}`} />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
-                      {record.subject}
+                      {new Date(record.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {new Date(record.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+                      {record.present ? 'Present' : 'Absent'}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setModalRecord(record)} className="text-[#64748B] hover:text-white">
-                      <HiOutlinePencil className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(record.id)} className="text-[#64748B] hover:text-red-400">
-                      <HiOutlineTrash className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               );
@@ -338,16 +168,6 @@ export default function AttendancePage() {
           </div>
         )}
       </div>
-
-      {modalRecord && (
-        <AttendanceModal
-          record={modalRecord}
-          onSave={handleSave}
-          onCancel={() => setModalRecord(null)}
-          loading={modalLoading}
-          error={modalError}
-        />
-      )}
     </div>
   );
 }

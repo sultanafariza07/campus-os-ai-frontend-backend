@@ -242,8 +242,8 @@ export default function DashboardPage() {
           api.auth.profile().catch(() => null), // Non-fatal, dashboard can proceed without it
           api.tasks.list(),
           api.notes.list().catch(() => ({ notes: [] })), // Non-fatal, fallback to 0 notes
-          api.notifications.list({ limit: 3 }).catch(() => ({ notifications: [] })), // Non-fatal, fallback to empty list
-          api.attendance.list({ limit: 3 }).catch(() => ({ attendance: [] })), // Non-fatal, fallback to empty list
+          api.notifications.list({ limit: 3 }).catch(() => ({ notifications: [] })),
+          api.attendance.list(3).catch(() => ({ attendance: [] })), // Non-fatal, fallback to empty list
         ]);
 
         if (!mounted) return;
@@ -268,8 +268,7 @@ export default function DashboardPage() {
 
         // 5. Attendance
         if (attendanceRes) {
-          const sorted = attendanceRes.attendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setAttendance(sorted);
+          setAttendance(attendanceRes.attendance);
         }
 
       } catch (e: unknown) {
@@ -551,7 +550,7 @@ export default function DashboardPage() {
                   <HiCheckCircle className="h-5 w-5 text-green-400" />
                 </span>
                 <div>
-                  <p className="text-lg font-bold text-white">{attendance.filter(r => r.status === 'Present').length}</p>
+                  <p className="text-lg font-bold text-white">{attendance.filter(r => r.present).length}</p>
                   <p className="text-xs text-[#64748B]">days present</p>
                 </div>
               </div>
