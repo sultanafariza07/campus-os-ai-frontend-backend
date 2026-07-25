@@ -206,7 +206,7 @@ export const api = {
       });
     },
 
-    resetPassword(body: { token: string; password: string }) { 
+    resetPassword(body: { token: string; password: string }) {
       return request<{ ok: boolean; message: string }>('/auth/reset-password', { method: 'POST', body, auth: false });
     },
   },
@@ -270,7 +270,7 @@ export const api = {
     },
 
     delete(id: number) {
-      return request<void>(`/notes/${id}`, { method: 'DELETE' })
+      return request<void>(`/notes/${id}`, { method: 'DELETE' });
     },
   },
 
@@ -336,19 +336,19 @@ export const api = {
     },
 
     unreadCount() {
-      return request<{ count: number }>('/notifications/unread-count', { method: 'GET' })
+      return request<{ count: number }>('/notifications/unread-count', { method: 'GET' });
     },
 
     markRead(id: number) {
-      return request<{ notification: NotificationItem }>(`/notifications/${id}/read`, { method: 'PATCH' })
+      return request<{ notification: NotificationItem }>(`/notifications/${id}/read`, { method: 'PATCH' });
     },
 
     markAllRead() {
-      return request<{ updated: number }>('/notifications/read-all', { method: 'PATCH' })
+      return request<{ updated: number }>('/notifications/read-all', { method: 'PATCH' });
     },
 
     delete(id: number) {
-      return request<void>(`/notifications/${id}`, { method: 'DELETE' })
+      return request<void>(`/notifications/${id}`, { method: 'DELETE' });
     },
   },
 }
