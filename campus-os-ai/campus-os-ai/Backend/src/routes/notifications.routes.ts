@@ -2,12 +2,22 @@ import { Router } from 'express'
 import { query } from '../db/index.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import { z } from 'zod'
 
 export const notificationsRouter = Router()
 
 notificationsRouter.use(requireAuth)
 
-const ALLOWED_TYPES = ['task', 'note', 'ai', 'general']
+const NotificationType = z.enum(['task', 'note', 'ai', 'general'])
+
+const NotificationSchema = z.object({
+  id: z.number(),
+  type: NotificationType,
+  title: z.string(),
+  message: z.string().nullable(),
+  read: z.boolean(),
+  createdAt: z.string(),
+})
 
 // GET /api/notifications?limit=50&type=task&unread=true
 notificationsRouter.get(
@@ -17,8 +27,8 @@ notificationsRouter.get(
     const requestedLimit = Number(req.query.limit)
     const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 && requestedLimit <= 100 ? requestedLimit : 50
 
-    const type = typeof req.query.type === 'string' && ALLOWED_TYPES.includes(req.query.type) ? req.query.type : null
-    const unreadOnly = req.query.unread === 'true'
+    const type = NotificationType.optional().parse(req.query.type)
+    const unreadOnly = z.boolean().optional().parse(req.query.unread === 'true' ? true : undefined)
 
     const conditions = ['user_id = $1']
     const params: unknown[] = [userId]
@@ -27,13 +37,13 @@ notificationsRouter.get(
       params.push(type)
       conditions.push(`type = $${params.length}`)
     }
-    if (unreadOnly) {
+    if (unreadOnly === true) {
       conditions.push('is_read = false')
     }
 
     params.push(limit)
 
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof NotificationSchema>>(
       `SELECT id, type, title, message, is_read AS read, created_at AS "createdAt"
        FROM notifications
        WHERE ${conditions.join(' AND ')}
@@ -78,21 +88,22 @@ notificationsRouter.post(
   '/',
   asyncHandler(async (req: AuthedRequest, res) => {
     const userId = req.user!.id
-    const { title, message, type } = req.body as { title?: string; message?: string; type?: string }
-
-    if (!title?.trim()) return res.status(400).json({ error: 'title is required' })
-    if (title.trim().length > 255) return res.status(400).json({ error: 'title must be 255 characters or fewer' })
-    if (message !== undefined && typeof message !== 'string') {
-      return res.status(400).json({ error: 'message must be a string' })
+    const CreateNotificationPayload = z.object({
+      title: z.string().trim().min(1, 'title is required').max(255),
+      message: z.string().trim().optional(),
+      type: NotificationType.optional().default('general'),
+    })
+    const parsed = CreateNotificationPayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
     }
+    const { title, message, type } = parsed.data
 
-    const safeType = ALLOWED_TYPES.includes(String(type)) ? String(type) : 'general'
-
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof NotificationSchema>>(
       `INSERT INTO notifications (user_id, type, title, message)
        VALUES ($1, $2, $3, $4)
        RETURNING id, type, title, message, is_read AS read, created_at AS "createdAt"`,
-      [userId, safeType, title.trim(), message?.trim() || null]
+      [userId, type, title, message || null]
     )
     return res.status(201).json({ notification: rows[0] })
   })
@@ -106,7 +117,7 @@ notificationsRouter.patch(
     const id = Number(req.params.id)
     if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' })
 
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof NotificationSchema>>(
       `UPDATE notifications SET is_read = true
        WHERE id = $1 AND user_id = $2
        RETURNING id, type, title, message, is_read AS read, created_at AS "createdAt"`,
@@ -125,7 +136,12 @@ notificationsRouter.delete(
     const id = Number(req.params.id)
     if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' })
 
-    await query('DELETE FROM notifications WHERE id = $1 AND user_id = $2', [id, userId])
+    const result = await query<{ id: number }>(
+      'DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, userId]
+    )
+
+    if (result.length === 0) return res.status(404).json({ error: 'notification not found' })
     return res.status(204).send()
   })
 )
