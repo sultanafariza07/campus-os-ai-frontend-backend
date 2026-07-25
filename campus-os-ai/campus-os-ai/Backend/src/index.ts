@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth.routes.js'
 import { notesRouter } from './routes/notes.routes.js'
 import { tasksRouter } from './routes/tasks.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
+import { attendanceRouter } from './routes/attendance.routes.js'
 import { requestLogger } from './middleware/requestLogger.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -46,6 +47,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/notes', notesRouter)
 app.use('/api/tasks', tasksRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/attendance', attendanceRouter)
 
 app.get('/', (_req: express.Request, res: express.Response) => {
   res.json({
