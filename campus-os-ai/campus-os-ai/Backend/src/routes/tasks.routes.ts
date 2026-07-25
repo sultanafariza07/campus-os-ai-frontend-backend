@@ -79,7 +79,7 @@ tasksRouter.put(
            completed = COALESCE($3, completed)
        WHERE id=$4 AND user_id=$5
        RETURNING id, title, due_date AS "dueDate", completed`,
-      [title ?? null, due_date, completed ?? null, taskId, userId]
+      [title ?? null, due_date ?? null, completed ?? null, taskId, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'task not found' })

@@ -179,7 +179,8 @@ export default function AttendancePage() {
       setAttendance(sorted);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
-        // This is handled by the global AuthEventHandler, no need to navigate here.
+        // This is handled by the global AuthEventHandler, which will redirect to the login page.
+        // No need to navigate here, as it can cause redirect loops.
         return;
       }
       setError(e instanceof Error ? e.message : "Failed to load attendance.");
