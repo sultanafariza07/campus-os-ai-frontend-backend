@@ -209,8 +209,10 @@ export default function AttendancePage() {
     try {
       if (modalRecord?.id) {
         await api.attendance.update(modalRecord.id, data);
+        setToast({ kind: "success", text: "Record updated" });
       } else {
         await api.attendance.create(data);
+        setToast({ kind: "success", text: "Record added" });
       }
       setModalRecord(null);
       await fetchData();

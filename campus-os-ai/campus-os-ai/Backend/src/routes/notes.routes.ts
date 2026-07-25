@@ -93,7 +93,7 @@ notesRouter.put(
 
     const rows = await query<z.infer<typeof NoteSchema>>(
       'UPDATE notes SET title=COALESCE($1, title), content=COALESCE($2, content), updated_at=NOW() WHERE id=$3 AND user_id=$4 RETURNING id, title, content, updated_at AS "updatedAt"',
-      [title, content, noteId, userId]
+      [title ?? null, content ?? null, noteId, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'note not found' })

@@ -34,14 +34,21 @@ authRouter.post(
     const password_hash = await bcrypt.hash(password, 10)
 
     try {
-      // The original query was returning more columns than the type expected, causing a crash.
-      // This is now corrected to only return the ID.
-      const rows = await query<{ id: number }>('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id', [
+      const rows = await query<{ id: number; name: string; email: string; branch: string | null; year: string | null }>('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, branch, year', [
         name,
         email.toLowerCase(),
         password_hash,
       ]);
-      return res.status(201).json({ id: rows[0]?.id });
+      const user = rows[0];
+      if (!user) {
+        throw new Error('User creation failed, no record returned.');
+      }
+
+      const token = jwt.sign({ sub: String(user.id) }, config.JWT_SECRET as jwt.Secret, {
+        expiresIn: config.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']
+      });
+
+      return res.status(201).json({ token, user });
     } catch (e: any) {
       // Unique constraint on email
       if (String(e?.code) === '23505') return res.status(409).json({ error: 'email already exists' })
@@ -84,7 +91,7 @@ authRouter.post(
       const rows = await query<{ id: number; name: string; email: string; branch: string | null; year: string | null }>(
         `INSERT INTO users (name, email, password_hash, branch, year, gesture_sequence, gesture_enabled)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE)
-         RETURNING id, name, email`,
+         RETURNING id, name, email, branch, year`,
         [name, email.toLowerCase(), password_hash, branch ?? null, year ?? null, JSON.stringify(sequence)]
       )
 
@@ -305,7 +312,7 @@ authRouter.patch(
            year = COALESCE($3, year)
        WHERE id = $4
        RETURNING id, name, email, branch, year`,
-      [name, branch, year, userId]
+      [name ?? null, branch ?? null, year ?? null, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'user not found' })
