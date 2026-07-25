@@ -1,5 +1,5 @@
 import { Router } from 'express'
-reate mimport { query } from '../db/index.js'
+import { query } from '../db/index.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 
@@ -125,7 +125,8 @@ notificationsRouter.delete(
     const id = Number(req.params.id)
     if (!Number.isFinite(id)) return res.status(400).json({ error: 'invalid id' })
 
-    await query('DELETE FROM notifications WHERE id = $1 AND user_id = $2', [id, userId])
+    const { rowCount } = await query('DELETE FROM notifications WHERE id = $1 AND user_id = $2', [id, userId])
+    if (rowCount === 0) return res.status(404).json({ error: 'notification not found' })
     return res.status(204).send()
   })
 )

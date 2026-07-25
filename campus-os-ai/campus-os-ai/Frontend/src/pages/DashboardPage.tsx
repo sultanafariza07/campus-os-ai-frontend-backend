@@ -386,6 +386,14 @@ export default function DashboardPage() {
               glow="radial-gradient(ellipse at top left, rgba(245,158,11,0.10), transparent 70%)"
               onClick={() => navigate("/tasks")}
             />
+            <QuickActionCard
+              icon={HiOutlineCalendar}
+              label="Attendance"
+              sub="Track your classes"
+              accent="#22C55E"
+              glow="radial-gradient(ellipse at top left, rgba(34,197,94,0.12), transparent 70%)"
+              onClick={() => navigate("/attendance")}
+            />
             <div className="col-span-2">
               <QuickActionCard
                 icon={HiSparkles}

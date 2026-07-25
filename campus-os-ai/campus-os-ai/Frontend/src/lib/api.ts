@@ -134,8 +134,8 @@ export const api = {
   auth: {
     login(body: { email: string; password: string }) {
       return request<{ token: string; user: UserProfileDto }>('/auth/login', {
-        { method: 'POST', body, auth: false }
-      })
+        method: 'POST', body, auth: false,
+      });
     },
 
     register(body: {
@@ -146,8 +146,7 @@ export const api = {
       year?: string
     }) {
       return request<{ token: string; user: UserProfileDto }>('/auth/register', {
-        method: 'POST',
-        body, auth: false
+        method: 'POST', body, auth: false
       })
     },
 
@@ -159,7 +158,7 @@ export const api = {
       sequence: string[]
     }) {
       return request<{ token: string; user: UserProfileDto }>('/auth/register-gesture', {
-        { method: 'POST', body, auth: false }
+        method: 'POST', body, auth: false,
       })
     },
 
@@ -186,7 +185,7 @@ export const api = {
 
     gestureLogin(body: { email: string; sequence: string[] }) {
       return request<{ token: string; user: UserProfileDto }>('/auth/gesture/login', {
-        { method: 'POST', body, auth: false }
+        method: 'POST', body, auth: false
       })
     },
 
@@ -198,20 +197,18 @@ export const api = {
       return request<{ ok: true }>('/auth/gesture/register', { method: 'DELETE' })
     },
 
-    /*
-    // TODO: Implement forgot password flow
     forgotPassword(body: { email: string }) {
-      return request<void>('/auth/forgot-password', {
+      // The backend returns a dev-only resetUrl for convenience
+      return request<{ ok: boolean; message: string; resetUrl?: string }>('/auth/forgot-password', {
         method: 'POST',
         body,
         auth: false,
       });
     },
 
-    resetPassword(body: { token: string; password: string }) {
-      return request<void>('/auth/reset-password', { method: 'POST', body, auth: false });
+    resetPassword(body: { token: string; password: string }) { 
+      return request<{ ok: boolean; message: string }>('/auth/reset-password', { method: 'POST', body, auth: false });
     },
-    */
   },
 
   tasks: {
@@ -274,6 +271,48 @@ export const api = {
 
     delete(id: number) {
       return request<void>(`/notes/${id}`, { method: 'DELETE' })
+    },
+  },
+
+  attendance: {
+    list() {
+      return request<{
+        attendance: Array<{
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        }>;
+      }>("/attendance", { method: "GET" });
+    },
+
+    create(body: { date: string; subject: string; status: "Present" | "Absent" | "Late" }) {
+      return request<{
+        attendance: {
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        };
+      }>("/attendance", { method: "POST", body });
+    },
+
+    update(id: number, body: { date?: string; subject?: string; status?: "Present" | "Absent" | "Late" }) {
+      return request<{
+        attendance: {
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        };
+      }>(`/attendance/${id}`, { method: "PUT", body });
+    },
+
+    delete(id: number) {
+      return request<void>(`/attendance/${id}`, { method: "DELETE" });
     },
   },
 

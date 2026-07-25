@@ -9,12 +9,14 @@ import {
   HiOutlineClipboardList,
   HiClipboardList,
   HiSparkles,
+  HiOutlineCalendar,
+  HiCalendar,
 } from "react-icons/hi";
 import React from "react";
 
 // ─── Tab definition ───────────────────────────────────────────────────────────
 
-type TabId = "home" | "notes" | "tasks" | "ai" | "profile";
+type TabId = "home" | "notes" | "tasks" | "attendance" | "ai" | "profile";
 
 interface Tab {
   id: TabId;
@@ -25,11 +27,12 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "home",    label: "Home",    path: "/dashboard", Icon: HiOutlineHome,          ActiveIcon: HiHome          },
-  { id: "notes",   label: "Notes",   path: "/notes",     Icon: HiOutlineDocumentText,  ActiveIcon: HiDocumentText  },
-  { id: "tasks",   label: "Tasks",   path: "/tasks",     Icon: HiOutlineClipboardList, ActiveIcon: HiClipboardList },
-  { id: "ai",      label: "AI",      path: "/ai",        Icon: HiSparkles,             ActiveIcon: HiSparkles      },
-  { id: "profile", label: "Profile", path: "/profile",   Icon: HiOutlineUser,          ActiveIcon: HiUser          },
+  { id: "home",       label: "Home",       path: "/dashboard",  Icon: HiOutlineHome,          ActiveIcon: HiHome          },
+  { id: "notes",      label: "Notes",      path: "/notes",      Icon: HiOutlineDocumentText,  ActiveIcon: HiDocumentText  },
+  { id: "tasks",      label: "Tasks",      path: "/tasks",      Icon: HiOutlineClipboardList, ActiveIcon: HiClipboardList },
+  { id: "attendance", label: "Attendance", path: "/attendance", Icon: HiOutlineCalendar,      ActiveIcon: HiCalendar      },
+  { id: "ai",         label: "AI",         path: "/ai",         Icon: HiSparkles,             ActiveIcon: HiSparkles      },
+  { id: "profile",    label: "Profile",    path: "/profile",    Icon: HiOutlineUser,          ActiveIcon: HiUser          },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -45,6 +48,7 @@ const BottomNav = () => {
   const getActiveId = (currentPath: string): TabId => {
     if (currentPath.startsWith("/notes")) return "notes";
     if (currentPath.startsWith("/tasks")) return "tasks";
+    if (currentPath.startsWith("/attendance")) return "attendance";
     if (currentPath.startsWith("/ai")) return "ai";
     if (currentPath.startsWith("/profile")) return "profile";
     return "home";
@@ -58,7 +62,7 @@ const BottomNav = () => {
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
+      <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium">
         {TABS.map((item) => {
           const isActive = activeId === item.id;
           const IconComponent = isActive ? item.ActiveIcon : item.Icon;

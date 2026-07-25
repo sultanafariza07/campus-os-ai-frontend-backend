@@ -70,18 +70,25 @@ notesRouter.put(
     if (!Number.isFinite(noteId)) return res.status(400).json({ error: 'invalid id' })
 
     const { title, content } = req.body as { title?: string; content?: string }
-    if (!title?.trim()) return res.status(400).json({ error: 'title is required' })
-    if (title.trim().length > 255) return res.status(400).json({ error: 'title must be 255 characters or fewer' })
-
-    const trimmedTitle = title.trim()
-    const trimmedContent = (content ?? '').trim()
+    if (title !== undefined && !title.trim()) {
+      return res.status(400).json({ error: 'title cannot be empty' })
+    }
+    if (title?.trim() && title.trim().length > 255) {
+      return res.status(400).json({ error: 'title must be 255 characters or fewer' })
+    }
+    if (content?.trim() && content.trim().length > 10000) {
+      return res.status(400).json({ error: 'content must be 10000 characters or fewer' })
+    }
 
     const rows = await query<any>(
-      'UPDATE notes SET title=$1, content=$2, updated_at=NOW() WHERE id=$3 AND user_id=$4 RETURNING id, title, content, updated_at AS updatedAt',
-      [trimmedTitle, trimmedContent, noteId, userId]
+      'UPDATE notes SET title = COALESCE($1, title), content = COALESCE($2, content), updated_at = NOW() WHERE id=$3 AND user_id=$4 RETURNING id, title, content, updated_at AS "updatedAt"',
+      [title?.trim() ?? null, content?.trim() ?? null, noteId, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'note not found' })
+
+    await createNotification(userId, 'note', 'Note updated', `Your note "${rows[0].title}" was updated.`)
+
     return res.json({ note: rows[0] })
   })
 )
@@ -93,7 +100,8 @@ notesRouter.delete(
     const noteId = Number(req.params.id)
     if (!Number.isFinite(noteId)) return res.status(400).json({ error: 'invalid id' })
 
-    await query('DELETE FROM notes WHERE id=$1 AND user_id=$2', [noteId, userId])
+    const { rowCount } = await query('DELETE FROM notes WHERE id=$1 AND user_id=$2', [noteId, userId])
+    if (rowCount === 0) return res.status(404).json({ error: 'note not found' })
     return res.status(204).send()
   })
 )
