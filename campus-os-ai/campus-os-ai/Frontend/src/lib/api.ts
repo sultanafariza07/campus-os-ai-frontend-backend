@@ -130,6 +130,15 @@ export interface UserProfileDto {
   createdAt?: string
 }
 
+export interface AttendanceRecord {
+  id: number;
+  date: string;
+  subject: string;
+  status: "Present" | "Absent" | "Late";
+  createdAt: string;
+}
+
+
 export const api = {
   auth: {
     login(body: { email: string; password: string }) {
@@ -275,16 +284,14 @@ export const api = {
   },
 
   attendance: {
-    list() {
-      return request<{
-        attendance: Array<{
-          id: number;
-          date: string;
-          subject: string;
-          status: "Present" | "Absent" | "Late";
-          createdAt: string;
-        }>;
-      }>("/attendance", { method: "GET" });
+    list(opts?: { limit?: number }) {
+      const params = new URLSearchParams()
+      if (opts?.limit) params.set('limit', String(opts.limit))
+      const qs = params.toString()
+      return request<{ attendance: AttendanceRecord[] }>(
+        `/attendance${qs ? `?${qs}` : ''}`,
+        { method: 'GET' }
+      );
     },
 
     create(body: { date: string; subject: string; status: "Present" | "Absent" | "Late" }) {

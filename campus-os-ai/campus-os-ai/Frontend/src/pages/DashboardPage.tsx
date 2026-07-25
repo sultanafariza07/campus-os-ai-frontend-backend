@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, ApiRequestError, type NotificationItem, type UserProfileDto } from "../lib/api";
+import { api, ApiRequestError, type NotificationItem, type UserProfileDto, type AttendanceRecord } from "../lib/api";
 
 import { ACTIVITIES } from "../data/activity";
 import { formatRelativeTime } from "../lib/formatRelativeTime";
@@ -24,6 +24,9 @@ import {
   HiCheckCircle,
   HiOutlineBookOpen,
   HiOutlineBell,
+  HiExclamationCircle,
+  HiMinusCircle,
+  HiOutlinePencil,
 } from "react-icons/hi";
 
 // The dashboard's local view of the signed-in user is just the backend's
@@ -173,6 +176,43 @@ function TaskRow({ task, onToggle }: { task: Task; onToggle: (id: number) => voi
   );
 }
 
+function AttendanceRow({ record }: { record: AttendanceRecord }) {
+  const STATUS_STYLES: Record<
+    AttendanceRecord['status'],
+    { icon: React.ElementType; bg: string; text: string }
+  > = {
+    Present: { icon: HiCheckCircle, bg: "bg-green-500/10", text: "text-green-400" },
+    Absent: { icon: HiExclamationCircle, bg: "bg-red-500/10", text: "text-red-400" },
+    Late: { icon: HiMinusCircle, bg: "bg-yellow-500/10", text: "text-yellow-400" },
+  };
+
+  const { icon: Icon, bg, text } = STATUS_STYLES[record.status];
+
+  return (
+    <div className="flex items-center gap-3 p-4 border-b border-white/[0.05] last:border-0">
+      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg}`}>
+        <Icon className={`w-5 h-5 ${text}`} />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white truncate">
+          {record.subject}
+        </p>
+        <p className="text-xs text-[#64748B] mt-0.5">
+          {new Date(record.date).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone: 'UTC',
+          })}
+        </p>
+      </div>
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}>
+        {record.status}
+      </span>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -185,6 +225,8 @@ export default function DashboardPage() {
   const [notesCount, setNotesCount] = useState<number | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -192,14 +234,16 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
       setNotificationsLoading(true);
+      setAttendanceLoading(true);
 
       try {
         // Fetch profile, tasks, notes, and notifications in parallel
-        const [profileRes, tasksRes, notesRes, notifRes] = await Promise.all([
+        const [profileRes, tasksRes, notesRes, notifRes, attendanceRes] = await Promise.all([
           api.auth.profile().catch(() => null), // Non-fatal, dashboard can proceed without it
           api.tasks.list(),
           api.notes.list().catch(() => ({ notes: [] })), // Non-fatal, fallback to 0 notes
           api.notifications.list({ limit: 3 }).catch(() => ({ notifications: [] })), // Non-fatal, fallback to empty list
+          api.attendance.list({ limit: 3 }).catch(() => ({ attendance: [] })), // Non-fatal, fallback to empty list
         ]);
 
         if (!mounted) return;
@@ -222,6 +266,12 @@ export default function DashboardPage() {
         // 4. Notifications
         if (notifRes) setNotifications(notifRes.notifications);
 
+        // 5. Attendance
+        if (attendanceRes) {
+          const sorted = attendanceRes.attendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setAttendance(sorted);
+        }
+
       } catch (e: unknown) {
         // This will now only catch errors from required requests, like api.tasks.list()
         if (e instanceof ApiRequestError && e.status === 401) {
@@ -233,6 +283,7 @@ export default function DashboardPage() {
         if (mounted) {
           setLoading(false);
           setNotificationsLoading(false);
+          setAttendanceLoading(false);
         }
       }
     })();
@@ -386,6 +437,14 @@ export default function DashboardPage() {
               glow="radial-gradient(ellipse at top left, rgba(245,158,11,0.10), transparent 70%)"
               onClick={() => navigate("/tasks")}
             />
+            <QuickActionCard
+              icon={HiOutlineCalendar}
+              label="Attendance"
+              sub="Track your classes"
+              accent="#22C55E"
+              glow="radial-gradient(ellipse at top left, rgba(34,197,94,0.12), transparent 70%)"
+              onClick={() => navigate("/attendance")}
+            />
             <div className="col-span-2">
               <QuickActionCard
                 icon={HiSparkles}
@@ -477,6 +536,28 @@ export default function DashboardPage() {
                 </p>
               )}
             </>
+          )}
+        </div>
+
+        {/* ── 7. Attendance Tracker ─────────────────────────────────────────── */}
+        <div>
+          <SectionHeader title="Attendance Tracker" action="View all" onAction={() => navigate("/attendance")} />
+          {attendanceLoading ? (
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl overflow-hidden">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
+          ) : attendance.length === 0 ? (
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] px-4 py-6 text-center shadow-xl">
+              <p className="text-xs text-[#64748B]">No attendance records yet.</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl overflow-hidden">
+              {attendance.slice(0, 3).map((record) => (
+                <AttendanceRow key={record.id} record={record} />
+              ))}
+            </div>
           )}
         </div>
 
