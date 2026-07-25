@@ -291,6 +291,9 @@ export const api = {
         body: { subject, status },
       })
     },
+    markToday(present: boolean) {
+      return this.mark("General", present ? "present" : "absent");
+    },
   },
 
   ai: {

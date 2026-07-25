@@ -143,9 +143,10 @@ export default function AttendancePage() {
         ) : (
           <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl">
             {attendance.map((record) => {
-              const Icon = record.present ? HiCheckCircle : HiExclamationCircle;
-              const bg = record.present ? "bg-green-500/10" : "bg-red-500/10";
-              const text = record.present ? "text-green-400" : "text-red-400";
+              const isPresent = record.status === 'present';
+              const Icon = isPresent ? HiCheckCircle : HiExclamationCircle;
+              const bg = isPresent ? "bg-green-500/10" : "bg-red-500/10";
+              const text = isPresent ? "text-green-400" : "text-red-400";
               return (
                 <div
                   key={record.id}
@@ -159,7 +160,7 @@ export default function AttendancePage() {
                       {new Date(record.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
                     </p>
                     <p className="text-xs text-[#64748B] mt-0.5">
-                      {record.present ? 'Present' : 'Absent'}
+                      {isPresent ? 'Present' : 'Absent'}
                     </p>
                   </div>
                 </div>
