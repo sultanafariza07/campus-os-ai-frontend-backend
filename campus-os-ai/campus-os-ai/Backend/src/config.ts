@@ -33,8 +33,10 @@ if (config.NODE_ENV === 'production') {
 
 // Always validate DATABASE_URL (even in dev) so failures become clear.
 if (!config.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set. Please add it to Backend/.env')
+  if (config.NODE_ENV === 'production') {
+    throw new Error(
+      'DATABASE_URL environment variable is not set for production. Please set it in your hosting provider dashboard.'
+    )
+  }
+  throw new Error('DATABASE_URL is not set. Please add it to your Backend/.env file.')
 }
-
-
-
