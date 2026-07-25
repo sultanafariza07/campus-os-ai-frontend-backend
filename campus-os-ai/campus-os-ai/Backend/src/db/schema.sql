@@ -49,7 +49,7 @@ CREATE INDEX idx_notes_user_id ON notes(user_id);
 CREATE TABLE attendance (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
   subject VARCHAR(255) NOT NULL,
   status VARCHAR(20) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
