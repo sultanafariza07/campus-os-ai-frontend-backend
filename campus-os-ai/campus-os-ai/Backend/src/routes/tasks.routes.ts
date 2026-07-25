@@ -3,16 +3,30 @@ import { query } from '../db/index.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { createNotification } from '../lib/notifications.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
+import { z } from 'zod'
 
 export const tasksRouter = Router()
 
 tasksRouter.use(requireAuth)
 
+const TaskSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  dueDate: z.string().nullable(),
+  completed: z.boolean(),
+})
+
+const CreateTaskPayload = z.object({
+  title: z.string().trim().min(1, 'title is required').max(255),
+  due_date: z.string().datetime().optional().nullable(),
+  completed: z.boolean().optional(),
+})
+
 tasksRouter.get(
   '/',
   asyncHandler(async (req: AuthedRequest, res) => {
     const userId = req.user!.id
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof TaskSchema>>(
       'SELECT id, title, due_date AS "dueDate", completed FROM tasks WHERE user_id=$1 ORDER BY id DESC',
       [userId]
     )
@@ -24,22 +38,15 @@ tasksRouter.post(
   '/',
   asyncHandler(async (req: AuthedRequest, res) => {
     const userId = req.user!.id
-    const { title, due_date, completed } = req.body as {
-      title?: string
-      due_date?: string
-      completed?: boolean
+    const parsed = CreateTaskPayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
     }
+    const { title, due_date, completed } = parsed.data
 
-    if (!title?.trim()) return res.status(400).json({ error: 'title is required' })
-    if (title.trim().length > 255) return res.status(400).json({ error: 'title must be 255 characters or fewer' })
-    if (due_date !== undefined && due_date !== null && Number.isNaN(new Date(due_date).getTime())) {
-      return res.status(400).json({ error: 'due_date must be a valid date' })
-    }
-
-    const due = due_date ? String(due_date) : null
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof TaskSchema>>(
       'INSERT INTO tasks (title, due_date, completed, user_id) VALUES ($1, $2, COALESCE($3,false), $4) RETURNING id, title, due_date AS "dueDate", completed',
-      [title.trim(), due, typeof completed === 'boolean' ? completed : false, userId]
+      [title, due_date ?? null, completed ?? false, userId]
     )
 
     await createNotification(userId, 'task', 'New task added', `"${rows[0].title}" was added to your tasks.`)
@@ -48,36 +55,30 @@ tasksRouter.post(
   })
 )
 
+const UpdateTaskPayload = CreateTaskPayload.partial()
+
 tasksRouter.put(
   '/:id',
   asyncHandler(async (req: AuthedRequest, res) => {
     const userId = req.user!.id
     const taskId = Number(req.params.id)
     if (!Number.isFinite(taskId)) return res.status(400).json({ error: 'invalid id' })
-
-    const { title, due_date, completed } = req.body as {
-      title?: string
-      due_date?: string
-      completed?: boolean
+    
+    const parsed = UpdateTaskPayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
     }
-
-    if (title !== undefined && !title.trim()) {
-      return res.status(400).json({ error: 'title cannot be empty' })
+    const { title, due_date, completed } = parsed.data
+    if (Object.keys(parsed.data).length === 0) {
+      return res.status(400).json({ error: 'at least one field to update must be provided' })
     }
-    if (title?.trim() && title.trim().length > 255) {
-      return res.status(400).json({ error: 'title must be 255 characters or fewer' })
-    }
-    if (due_date !== undefined && due_date !== null && Number.isNaN(new Date(due_date).getTime())) {
-      return res.status(400).json({ error: 'due_date must be a valid date' })
-    }
-
-    const rows = await query<any>(
+    const rows = await query<z.infer<typeof TaskSchema>>(
       `UPDATE tasks
        SET title = COALESCE($1, title),
            due_date = COALESCE($2, due_date),
            completed = COALESCE($3, completed)
        WHERE id=$4 AND user_id=$5 RETURNING id, title, due_date AS "dueDate", completed`,
-      [title?.trim() ?? null, due_date ?? null, typeof completed === 'boolean' ? completed : null, taskId, userId]
+      [title, due_date, completed, taskId, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'task not found' })
