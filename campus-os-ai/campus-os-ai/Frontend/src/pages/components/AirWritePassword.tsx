@@ -77,7 +77,6 @@ const OPEN_PALM_HOLD_MS = 350;
 // and ends the current character. This is the primary segmentation method now.
 const PAUSE_HOLD_MS = 450;
 // How long a fist must be held to arm the recognizer before writing can
-const FIST_HOLD_MS = 800;
 
 type CameraStatus = "loading" | "ready" | "denied" | "error";
 type Mode = "writing" | "review";
@@ -105,11 +104,6 @@ export default function AirWritePassword({
   const [status, setStatus] = useState<CameraStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("writing");
-  const [handVisible, setHandVisible] = useState(false);
-  // Whether the ✊ fist "get ready" gate has been cleared yet. Nothing is
-  // tracked or drawn until this is true — it's set once per writing
-  // session (reset by "Write again"), not once per character.
-  const [armed, setArmed] = useState(true);
   // Which of the two controlling gestures (if either) is currently showing,
   // purely for the on-screen "✍️ Writing" / "✋ Hold to stop" badge.
   const [liveGesture, setLiveGesture] = useState<GestureName | null>(null);
@@ -131,16 +125,6 @@ export default function AirWritePassword({
   const pauseHoldRef = useRef<number | null>(null);
   // How long the fist "get ready" gesture has been held continuously, while
   // not yet armed.
-  const fistHoldRef = useRef<number | null>(null); // This ref is no longer used but kept to avoid breaking other parts if they are not shown.
-  // The RAF loop below is set up once (empty-deps effect) and reads `armed`
-  // every frame, so it needs a ref — a closed-over React state value would
-  // never see later updates. armedRef is the source of truth; `armed` state
-  // just mirrors it for the on-screen badge/instructions.
-  const armedRef = useRef(true);
-  function setArmedBoth(value: boolean) {
-    armedRef.current = value;
-    setArmed(value);
-  }
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -261,7 +245,6 @@ export default function AirWritePassword({
         const landmarks = result?.landmarks?.[0];
 
         if (landmarks) {
-          setHandVisible(true);
           const gesture = classifyGesture(landmarks);
           setLiveGesture(gesture);
           const now = performance.now();
@@ -326,15 +309,11 @@ export default function AirWritePassword({
           ctx.fillStyle = gesture !== "open_palm" ? "#A5A0FF" : "#4B5566";
           ctx.fill();
         } else {
-          setHandVisible(false);
           setLiveGesture(null);
           lastPointRef.current = null;
           // If hand disappears mid-stroke, commit what we have.
           if (strokeRef.current.length > MIN_STROKE_POINTS) commitStroke();
           smoothedPointRef.current = null;
-          openPalmHoldRef.current = null;
-          pauseHoldRef.current = null;
-          fistHoldRef.current = null;
         }
       }
       rafRef.current = requestAnimationFrame(loop);
@@ -349,7 +328,6 @@ export default function AirWritePassword({
       streamRef.current = null;
       landmarker?.close?.();
       setLiveGesture(null); // Reset live gesture on cleanup
-      armedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -386,7 +364,7 @@ export default function AirWritePassword({
                 Recording…
               </div>
             )}
-            {status === "ready" && handVisible && (
+            {status === "ready" && liveGesture && (
               <div
                 className={`absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-medium ${
                   liveGesture !== "open_palm"
@@ -397,7 +375,7 @@ export default function AirWritePassword({
                 {liveGesture === "open_palm" ? "✋ Hold to stop…" : "✍️ Writing…"}
               </div>
             )}
-            {status === "ready" && !handVisible && (
+            {status === "ready" && !liveGesture && (
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-[11px] text-[#94A3B8]">
                 Show your hand to the camera ✋
               </div>

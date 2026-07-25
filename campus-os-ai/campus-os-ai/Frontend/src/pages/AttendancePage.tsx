@@ -175,7 +175,7 @@ export default function AttendancePage() {
       setError(null);
       const res = await api.attendance.list();
       // Sort records by date, most recent first.
-      const sorted = res.attendance.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const sorted = res.attendance.sort((a: AttendanceRecord, b: AttendanceRecord) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setAttendance(sorted);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
