@@ -7,33 +7,36 @@ import { config } from '../config.js'
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/asyncHandler.js'
 import { rateLimit } from '../middleware/rateLimit.js'
+import { z } from 'zod'
 
 export const authRouter = Router()
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // 10 attempts / 15 minutes per IP+route — enough headroom for real users
 // mistyping a password a few times, tight enough to blunt naive brute force.
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 })
 
+const RegisterPayload = z.object({
+  name: z.string().trim().min(1, 'name is required').max(255, 'name must be 255 characters or fewer'),
+  email: z.string().trim().email('enter a valid email address'),
+  password: z.string().min(8, 'password must be at least 8 chars'),
+})
+
 authRouter.post(
   '/register',
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { name, email, password } = req.body as { name?: string; email?: string; password?: string }
-
-    if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
-    if (name.trim().length > 255) return res.status(400).json({ error: 'name must be 255 characters or fewer' })
-    if (!email?.trim()) return res.status(400).json({ error: 'email is required' })
-    if (!EMAIL_RE.test(email.trim())) return res.status(400).json({ error: 'enter a valid email address' })
-    if (!password || password.length < 8) return res.status(400).json({ error: 'password must be at least 8 chars' })
+    const parsed = RegisterPayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
+    }
+    const { name, email, password } = parsed.data
 
     const password_hash = await bcrypt.hash(password, 10)
 
     try {
       const rows = await query<{ id: number }>(
         'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
-        [name.trim(), email.trim().toLowerCase(), password_hash]
+        [name, email.toLowerCase(), password_hash]
       )
       return res.status(201).json({ id: rows[0]?.id })
     } catch (e: any) {
@@ -54,14 +57,18 @@ authRouter.post(
   '/register-gesture',
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { name, email, branch, year, sequence } = req.body as {
-      name?: string; email?: string; branch?: string; year?: string; sequence?: unknown
+    const GestureRegisterPayload = z.object({
+      name: z.string().trim().min(1, 'name is required').max(255),
+      email: z.string().trim().email('enter a valid email address'),
+      branch: z.string().optional(),
+      year: z.string().optional(),
+      sequence: z.unknown(),
+    })
+    const parsed = GestureRegisterPayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
     }
-
-    if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
-    if (name.trim().length > 255) return res.status(400).json({ error: 'name must be 255 characters or fewer' })
-    if (!email?.trim()) return res.status(400).json({ error: 'email is required' })
-    if (!EMAIL_RE.test(email.trim())) return res.status(400).json({ error: 'enter a valid email address' })
+    const { name, email, branch, year, sequence } = parsed.data
 
     const seqErr = validateSequence(sequence)
     if (seqErr) return res.status(400).json({ error: seqErr })
@@ -70,11 +77,12 @@ authRouter.post(
     const password_hash = await bcrypt.hash(randomPassword, 10)
 
     try {
-      const rows = await query<{ id: number; name: string; email: string }>(
+      // The type needs to be updated to include branch and year to match the RETURNING clause
+      const rows = await query<{ id: number; name: string; email: string; branch: string | null; year: string | null }>(
         `INSERT INTO users (name, email, password_hash, branch, year, gesture_sequence, gesture_enabled)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE)
          RETURNING id, name, email`,
-        [name.trim(), email.trim().toLowerCase(), password_hash, branch ?? null, year ?? null, JSON.stringify(sequence)]
+        [name, email.toLowerCase(), password_hash, branch ?? null, year ?? null, JSON.stringify(sequence)]
       )
 
       const user = rows[0]
@@ -90,17 +98,22 @@ authRouter.post(
   })
 )
 
+const LoginPayload = z.object({
+  email: z.string().trim().email('enter a valid email address'),
+  password: z.string().min(1, 'password is required'),
+})
+
 authRouter.post(
   '/login',
   authLimiter,
   asyncHandler(async (req, res) => {
-    const { email, password } = req.body as { email?: string; password?: string }
-    if (!email?.trim()) return res.status(400).json({ error: 'email is required' })
-    if (!password) return res.status(400).json({ error: 'password is required' })
+    const parsed = LoginPayload.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message })
+    const { email, password } = parsed.data
 
     const users = await query<{ id: number; password_hash: string; name: string; email: string }>(
       'SELECT id, name, email, password_hash FROM users WHERE email=$1 LIMIT 1',
-      [email.trim().toLowerCase()]
+      [email.toLowerCase()]
     )
 
     const user = users[0]
@@ -267,20 +280,20 @@ authRouter.patch(
   requireAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const userId = req.user!.id
-    const { name, branch, year } = req.body as { name?: string; branch?: string; year?: string }
+    const UpdateProfilePayload = z.object({
+      name: z.string().trim().min(1, 'name cannot be empty').max(255).optional(),
+      branch: z.string().trim().max(100).optional(),
+      year: z.string().trim().max(50).optional(),
+    }).partial()
 
-    if (name !== undefined && !name.trim()) {
-      return res.status(400).json({ error: 'name cannot be empty' })
+    const parsed = UpdateProfilePayload.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.errors[0].message })
     }
-    if (name !== undefined && name.trim().length > 255) {
-      return res.status(400).json({ error: 'name must be 255 characters or fewer' })
+    if (Object.keys(parsed.data).length === 0) {
+      return res.status(400).json({ error: 'at least one field to update must be provided' })
     }
-    if (branch !== undefined && branch.length > 100) {
-      return res.status(400).json({ error: 'branch must be 100 characters or fewer' })
-    }
-    if (year !== undefined && year.length > 50) {
-      return res.status(400).json({ error: 'year must be 50 characters or fewer' })
-    }
+    const { name, branch, year } = parsed.data
 
     const rows = await query<{ id: number; name: string; email: string; branch: string | null; year: string | null }>(
       `UPDATE users
@@ -289,7 +302,7 @@ authRouter.patch(
            year = COALESCE($3, year)
        WHERE id = $4
        RETURNING id, name, email, branch, year`,
-      [name?.trim() ?? null, branch?.trim() ?? null, year?.trim() ?? null, userId]
+      [name, branch, year, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'user not found' })
