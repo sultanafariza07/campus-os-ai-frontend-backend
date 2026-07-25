@@ -34,11 +34,14 @@ authRouter.post(
     const password_hash = await bcrypt.hash(password, 10)
 
     try {
-      const rows = await query<{ id: number }>(
-        'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
-        [name, email.toLowerCase(), password_hash]
-      )
-      return res.status(201).json({ id: rows[0]?.id })
+      // The original query was returning more columns than the type expected, causing a crash.
+      // This is now corrected to only return the ID.
+      const rows = await query<{ id: number }>('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id', [
+        name,
+        email.toLowerCase(),
+        password_hash,
+      ]);
+      return res.status(201).json({ id: rows[0]?.id });
     } catch (e: any) {
       // Unique constraint on email
       if (String(e?.code) === '23505') return res.status(409).json({ error: 'email already exists' })
