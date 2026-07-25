@@ -255,7 +255,7 @@ export default function DashboardPage() {
         const mappedTasks: Task[] = tasksRes.tasks.map((t: any) => ({
           id: Number(t.id),
           title: String(t.title),
-          due: String(t.dueDate ?? t.due_date ?? ''),
+          due: String(t.dueDate ?? ''),
           done: Boolean(t.completed),
         }));
         setTasks(mappedTasks);
@@ -437,14 +437,6 @@ export default function DashboardPage() {
               glow="radial-gradient(ellipse at top left, rgba(245,158,11,0.10), transparent 70%)"
               onClick={() => navigate("/tasks")}
             />
-            <QuickActionCard
-              icon={HiOutlineCalendar}
-              label="Attendance"
-              sub="Track your classes"
-              accent="#22C55E"
-              glow="radial-gradient(ellipse at top left, rgba(34,197,94,0.12), transparent 70%)"
-              onClick={() => navigate("/attendance")}
-            />
             <div className="col-span-2">
               <QuickActionCard
                 icon={HiSparkles}
@@ -549,14 +541,20 @@ export default function DashboardPage() {
               <SkeletonRow />
             </div>
           ) : attendance.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] px-4 py-6 text-center shadow-xl">
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] px-4 py-5 text-center shadow-xl">
               <p className="text-xs text-[#64748B]">No attendance records yet.</p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl overflow-hidden">
-              {attendance.slice(0, 3).map((record) => (
-                <AttendanceRow key={record.id} record={record} />
-              ))}
+            <div className="rounded-2xl border border-white/[0.07] bg-[#111118] p-4 text-center shadow-xl">
+              <div className="flex items-center justify-center gap-2">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10">
+                  <HiCheckCircle className="h-5 w-5 text-green-400" />
+                </span>
+                <div>
+                  <p className="text-lg font-bold text-white">{attendance.filter(r => r.status === 'Present').length}</p>
+                  <p className="text-xs text-[#64748B]">days present</p>
+                </div>
+              </div>
             </div>
           )}
         </div>

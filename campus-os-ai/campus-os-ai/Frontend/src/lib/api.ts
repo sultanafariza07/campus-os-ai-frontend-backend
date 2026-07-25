@@ -284,42 +284,17 @@ export const api = {
   },
 
   attendance: {
-    list(opts?: { limit?: number }) {
-      const params = new URLSearchParams()
-      if (opts?.limit) params.set('limit', String(opts.limit))
-      const qs = params.toString()
-      return request<{ attendance: AttendanceRecord[] }>(
-        `/attendance${qs ? `?${qs}` : ''}`,
+    list(limit = 30) {
+      return request<{ attendance: Array<{ id: number; date: string; present: boolean }> }>(
+        `/attendance?limit=${limit}`,
         { method: 'GET' }
-      );
+      )
     },
-
-    create(body: { date: string; subject: string; status: "Present" | "Absent" | "Late" }) {
-      return request<{
-        attendance: {
-          id: number;
-          date: string;
-          subject: string;
-          status: "Present" | "Absent" | "Late";
-          createdAt: string;
-        };
-      }>("/attendance", { method: "POST", body });
-    },
-
-    update(id: number, body: { date?: string; subject?: string; status?: "Present" | "Absent" | "Late" }) {
-      return request<{
-        attendance: {
-          id: number;
-          date: string;
-          subject: string;
-          status: "Present" | "Absent" | "Late";
-          createdAt: string;
-        };
-      }>(`/attendance/${id}`, { method: "PUT", body });
-    },
-
-    delete(id: number) {
-      return request<void>(`/attendance/${id}`, { method: "DELETE" });
+    markToday(present: boolean) {
+      return request<{ attendance: { id: number; date: string; present: boolean } }>(
+        '/attendance',
+        { method: 'POST', body: { present } }
+      )
     },
   },
 

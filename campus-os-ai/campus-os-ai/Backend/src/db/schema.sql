@@ -50,9 +50,9 @@ CREATE TABLE attendance (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
-  subject VARCHAR(255) NOT NULL,
-  status VARCHAR(20) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  present BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, date)
 );
 CREATE INDEX idx_attendance_user_id ON attendance(user_id);
 

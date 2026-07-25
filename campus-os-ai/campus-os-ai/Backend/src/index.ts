@@ -4,7 +4,7 @@ import helmet from 'helmet'
 
 import { config } from './config.js'
 import { authRouter } from './routes/auth.routes.js'
-import { attendanceRoutes } from './routes/attendance.routes.js'
+import { attendanceRouter } from './routes/attendance.routes.js'
 import { notesRouter } from './routes/notes.routes.js'
 import { tasksRouter } from './routes/tasks.routes.js'
 import { aiRouter } from './routes/ai.routes.js'
@@ -50,7 +50,7 @@ app.use('/api/notes', notesRouter)
 app.use('/api/tasks', tasksRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/ai', aiRouter)
-app.use('/api/attendance', attendanceRoutes)
+app.use('/api/attendance', attendanceRouter)
 
 app.get('/', (_req: express.Request, res: express.Response) => {
   res.json({
