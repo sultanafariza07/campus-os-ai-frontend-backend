@@ -104,9 +104,12 @@ tasksRouter.delete(
       return res.status(400).json({ error: 'invalid id' })
     }
 
-    const { rowCount } = await query('DELETE FROM tasks WHERE id=$1 AND user_id=$2', [taskId, userId])
+    const result = await query<{ id: number }>(
+      'DELETE FROM tasks WHERE id=$1 AND user_id=$2 RETURNING id',
+      [taskId, userId]
+    )
 
-    if (rowCount === 0) return res.status(404).json({ error: 'task not found' })
+    if (result.length === 0) return res.status(404).json({ error: 'task not found' })
     return res.status(204).send()
   })
 )
