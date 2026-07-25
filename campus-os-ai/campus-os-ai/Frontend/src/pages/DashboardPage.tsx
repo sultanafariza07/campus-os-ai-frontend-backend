@@ -178,15 +178,14 @@ function TaskRow({ task, onToggle }: { task: Task; onToggle: (id: number) => voi
 
 function AttendanceRow({ record }: { record: AttendanceRecord }) {
   const STATUS_STYLES: Record<
-    AttendanceRecord['status'],
+    'present' | 'absent',
     { icon: React.ElementType; bg: string; text: string }
   > = {
-    Present: { icon: HiCheckCircle, bg: "bg-green-500/10", text: "text-green-400" },
-    Absent: { icon: HiExclamationCircle, bg: "bg-red-500/10", text: "text-red-400" },
-    Late: { icon: HiMinusCircle, bg: "bg-yellow-500/10", text: "text-yellow-400" },
+    present: { icon: HiCheckCircle, bg: "bg-green-500/10", text: "text-green-400" },
+    absent: { icon: HiExclamationCircle, bg: "bg-red-500/10", text: "text-red-400" },
   };
 
-  const { icon: Icon, bg, text } = STATUS_STYLES[record.status];
+  const { icon: Icon, bg, text } = STATUS_STYLES[record.status] || STATUS_STYLES.absent;
 
   return (
     <div className="flex items-center gap-3 p-4 border-b border-white/[0.05] last:border-0">
@@ -207,7 +206,7 @@ function AttendanceRow({ record }: { record: AttendanceRecord }) {
         </p>
       </div>
       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}>
-        {record.status}
+        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
       </span>
     </div>
   );
@@ -243,7 +242,7 @@ export default function DashboardPage() {
           api.tasks.list(),
           api.notes.list().catch(() => ({ notes: [] })), // Non-fatal, fallback to 0 notes
           api.notifications.list({ limit: 3 }).catch(() => ({ notifications: [] })),
-          api.attendance.list(3).catch(() => ({ attendance: [] })), // Non-fatal, fallback to empty list
+          api.attendance.list(3).catch(() => ({ attendance: [] })),
         ]);
 
         if (!mounted) return;
@@ -550,7 +549,7 @@ export default function DashboardPage() {
                   <HiCheckCircle className="h-5 w-5 text-green-400" />
                 </span>
                 <div>
-                  <p className="text-lg font-bold text-white">{attendance.filter(r => r.present).length}</p>
+                  <p className="text-lg font-bold text-white">{attendance.filter(r => r.status === 'present').length}</p>
                   <p className="text-xs text-[#64748B]">days present</p>
                 </div>
               </div>
