@@ -18,7 +18,7 @@ const TaskSchema = z.object({
 
 const CreateTaskPayload = z.object({
   title: z.string().trim().min(1, 'title is required').max(255),
-  due_date: z.string().datetime().optional().nullable(),
+  due_date: z.string().optional().nullable(),
   completed: z.boolean().optional(),
 })
 
@@ -71,7 +71,7 @@ tasksRouter.put(
     if (Object.keys(parsed.data).length === 0) {
       return res.status(400).json({ error: 'at least one field to update must be provided' })
     }
-    const { title, due_date, completed } = parsed.data
+    const { title, due_date, completed } = parsed.data;
     const rows = await query<z.infer<typeof TaskSchema>>(
       `UPDATE tasks
        SET title = COALESCE($1, title),
@@ -79,7 +79,7 @@ tasksRouter.put(
            completed = COALESCE($3, completed)
        WHERE id=$4 AND user_id=$5
        RETURNING id, title, due_date AS "dueDate", completed`,
-      [title ?? null, due_date ?? null, completed ?? null, taskId, userId]
+      [parsed.data.title ?? null, parsed.data.due_date ?? null, parsed.data.completed ?? null, taskId, userId]
     )
 
     if (!rows[0]) return res.status(404).json({ error: 'task not found' })
