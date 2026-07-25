@@ -82,7 +82,7 @@ attendanceRoutes.put(
            status = COALESCE($3, status)
        WHERE id = $4 AND user_id = $5
        RETURNING id, user_id, date, subject, status, created_at AS "createdAt"`,
-      [date, subject, status, id, userId]
+      [date ?? null, subject ?? null, status ?? null, id, userId]
     );
 
     if (!updatedRecord) {
