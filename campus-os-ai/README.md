@@ -15,6 +15,7 @@ Campus OS AI is a full-stack campus management platform with AI-powered features
 
 > Update this list with your project's actual features.
 
+---
 
 ## 🛠️ Tech Stack
 
@@ -58,7 +59,8 @@ campus-os-ai-frontend-backend/
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- PostgreSQL (for local development)
+- npm or yarn
+- MongoDB (local or Atlas) / PostgreSQL
 
 ### Installation
 
@@ -66,7 +68,6 @@ campus-os-ai-frontend-backend/
    ```bash
    git clone https://github.com/your-username/campus-os-ai-frontend-backend.git
    cd campus-os-ai-frontend-backend
-   cd campus-os-ai
    ```
 
 2. **Setup Backend**
@@ -76,11 +77,10 @@ campus-os-ai-frontend-backend/
    ```
    Create a `.env` file in the `backend` folder:
    ```
-   PORT=3001
-   DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
-   JWT_SECRET=dev-secret-change-me
-   JWT_EXPIRES_IN=7d
-   CORS_ORIGIN=http://localhost:5173
+   PORT=5000
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   AI_API_KEY=your_ai_api_key
    ```
    Start the backend server:
    ```bash
@@ -94,7 +94,7 @@ campus-os-ai-frontend-backend/
    ```
    Create a `.env` file in the `frontend` folder:
    ```
-   VITE_API_URL=http://localhost:3001
+   VITE_API_URL=http://localhost:5000
    ```
    Start the frontend:
    ```bash
@@ -112,9 +112,11 @@ campus-os-ai-frontend-backend/
 
 This project is deployed on **Vercel**.
 
-- The frontend is deployed to Vercel, and the backend is deployed to a separate service like Render.
-- The `frontend/vercel.json` file is crucial for a Single Page Application (SPA). It ensures that direct navigation to routes like `/dashboard` works correctly after deployment.
-- **Important:** For the live backend on Render, you must set the environment variables in the Render dashboard. The `DATABASE_URL` should be the "Internal Connection String" provided by your Render PostgreSQL instance, and `CORS_ORIGIN` must be set to your Vercel frontend URL (e.g., `https://campus-os-ai-frontend-backend-beryl.vercel.app`).
+- Frontend and backend are deployed as part of the same Vercel project (or as separate Vercel projects — update accordingly).
+- On every push to the `main` branch, Vercel automatically triggers a new deployment.
+- Make sure environment variables are also set in **Vercel → Project Settings → Environment Variables**, not just locally in `.env`.
+
+---
 
 ## 🤝 Contributing
 

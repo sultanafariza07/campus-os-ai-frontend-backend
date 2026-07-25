@@ -15,7 +15,6 @@ import ProfilePage from "./pages/ProfilePage";
 import NotesPage from "./pages/NotesPage";
 import NoteEditorPage from "./pages/NoteEditorPage";
 import TasksPage from "./pages/TasksPage";
-import AttendancePage from "./pages/AttendancePage";
 import AiAssistantPage from "./pages/AiAssistantPage";
 import ActivityPage from "./pages/ActivityPage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -27,7 +26,6 @@ const NAV_ROUTES = [
   "/dashboard",
   "/notes",
   "/tasks",
-  "/attendance",
   "/ai",
   "/profile",
   "/activity",
@@ -117,15 +115,6 @@ function Layout() {
           element={
             <RequireAuth>
               <NotificationsPage />
-            </RequireAuth>
-          }
-        />
-
-        <Route
-          path="/attendance"
-          element={
-            <RequireAuth>
-              <AttendancePage />
             </RequireAuth>
           }
         />

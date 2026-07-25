@@ -14,9 +14,8 @@ function mustGetDatabaseUrl() {
 
 export const pool = new Pool({
   connectionString: mustGetDatabaseUrl(),
-  // Most hosted Postgres providers (Render, Supabase, etc.) require SSL,
-  // but local development often doesn't. Only enable SSL when it's supported.
-  ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Most hosted Postgres providers (Render, Supabase, etc.) require SSL.
+  ssl: { rejectUnauthorized: false },
 })
 
 export async function query<T = any>(text: string, params: unknown[] = []): Promise<T[]> {

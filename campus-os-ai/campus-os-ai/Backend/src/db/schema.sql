@@ -57,15 +57,3 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS notifications_user_unread_idx ON notifications(user_id, is_read);
 
--- Phase 15: Attendance tracking
-CREATE TABLE IF NOT EXISTS attendance (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  subject VARCHAR(255) NOT NULL,
-  status VARCHAR(50) NOT NULL, -- e.g., 'Present', 'Absent', 'Late'
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS attendance_user_id_idx ON attendance(user_id);
-CREATE INDEX IF NOT EXISTS attendance_user_id_date_idx ON attendance(user_id, date);
