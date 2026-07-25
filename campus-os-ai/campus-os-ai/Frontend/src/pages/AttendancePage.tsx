@@ -179,7 +179,7 @@ export default function AttendancePage() {
       setAttendance(sorted);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
-        navigate("/", { replace: true });
+        navigate("/dashboard", { replace: true });
         return;
       }
       setError(e instanceof Error ? e.message : "Failed to load attendance.");
@@ -303,7 +303,7 @@ export default function AttendancePage() {
         ) : (
           <div className="rounded-2xl border border-white/[0.07] bg-[#111118] divide-y divide-white/[0.05] shadow-xl">
             {attendance.map((record) => {
-              const statusKey = capitalize(record.status) as Status;
+              const statusKey = record.status;
               const { icon: Icon, bg, text } = STATUS_STYLES[statusKey];
               return (
                 <div
