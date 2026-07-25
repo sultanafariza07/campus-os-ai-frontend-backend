@@ -179,7 +179,7 @@ export default function AttendancePage() {
       setAttendance(sorted);
     } catch (e) {
       if (e instanceof ApiRequestError && e.status === 401) {
-        navigate("/dashboard", { replace: true });
+        // This is handled by the global AuthEventHandler, no need to navigate here.
         return;
       }
       setError(e instanceof Error ? e.message : "Failed to load attendance.");
