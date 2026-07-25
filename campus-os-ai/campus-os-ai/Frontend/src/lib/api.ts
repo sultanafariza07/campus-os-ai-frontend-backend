@@ -316,6 +316,48 @@ export const api = {
     },
   },
 
+  attendance: {
+    list() {
+      return request<{
+        attendance: Array<{
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        }>;
+      }>("/attendance", { method: "GET" });
+    },
+
+    create(body: { date: string; subject: string; status: "Present" | "Absent" | "Late" }) {
+      return request<{
+        attendance: {
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        };
+      }>("/attendance", { method: "POST", body });
+    },
+
+    update(id: number, body: { date?: string; subject?: string; status?: "Present" | "Absent" | "Late" }) {
+      return request<{
+        attendance: {
+          id: number;
+          date: string;
+          subject: string;
+          status: "Present" | "Absent" | "Late";
+          createdAt: string;
+        };
+      }>(`/attendance/${id}`, { method: "PUT", body });
+    },
+
+    delete(id: number) {
+      return request<void>(`/attendance/${id}`, { method: "DELETE" });
+    },
+  },
+
   ai: {
     chat(body: { message: string }) {
       return request<{ reply: string }>('/ai/chat', { method: 'POST', body });
