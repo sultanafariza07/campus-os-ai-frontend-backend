@@ -1,7 +1,8 @@
 Campus OS AI
 Campus OS AI is a full-stack campus management platform with AI-powered features, built with a separate frontend and backend.
 
-🔗 Live Demo: https://campus-os-ai-frontend-backend-beryl.vercel.app/
+🔗 Live Demo: 
+https://campus-os-ai-frontend-backend-chi.vercel.app/
 ✨ Features
 🎓 Student, course, and campus data management
 🤖 AI-powered assistant for answering campus-related queries
