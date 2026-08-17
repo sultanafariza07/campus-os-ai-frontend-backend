@@ -24,16 +24,22 @@ app.use(helmet({
 
 const allowedOrigins = [
   'http://localhost:5173', // Local dev frontend
-  'https://campus-os-ai-frontend-backend-beryl.vercel.app', // Deployed Vercel frontend
-  'https://campus-os-ai-frontend-backend-chi.vercel.app', // New Vercel frontend URL from error logs
+  'https://campus-os-ai-frontend-backend.vercel.app', // Stable production Vercel domain
   config.CORS_ORIGIN, // Keep support for the environment variable
 ].filter(Boolean) as string[]
+
+// Vercel gives every preview deployment a new random-suffixed URL
+// (e.g. campus-os-ai-frontend-backend-8nhoi4wqa.vercel.app). Rather than
+// hardcoding each one (which goes stale on every deploy), match any
+// preview URL that belongs to this project by pattern.
+const vercelPreviewPattern = /^https:\/\/campus-os-ai-frontend-backend-[a-z0-9]+\.vercel\.app$/
 
 app.use(cors({
   origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
     // Allow non-browser clients (e.g., curl, Render health checks) that don't send an Origin header.
     if (!origin) return cb(null, true)
     if (allowedOrigins.includes(origin)) return cb(null, true)
+    if (vercelPreviewPattern.test(origin)) return cb(null, true)
     return cb(new Error(`CORS policy does not allow access from origin ${origin}`))
   },
   credentials: true,
