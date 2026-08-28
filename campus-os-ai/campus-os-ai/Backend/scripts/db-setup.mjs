@@ -1,30 +1,47 @@
+u depimport pg from 'pg';
 import 'dotenv/config';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const schemaPath = path.join(__dirname, '..', 'src', 'db', 'schema.sql');
+const { Pool } = pg;
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl || databaseUrl.includes('USER:PASSWORD')) {
-  console.error(
-    'DATABASE_URL is missing or still a placeholder. Set a real connection string in Backend/.env before running db:setup.'
-  );
-  process.exit(1);
-}
-
-console.log(`Running schema against: ${databaseUrl.replace(/:[^:@]*@/, ':****@')}`);
-
-const result = spawnSync('psql', [databaseUrl, '-f', schemaPath], {
-  stdio: 'inherit',
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
 });
 
-if (result.error) {
-  console.error('Failed to run psql. Is PostgreSQL installed and on your PATH?');
-  console.error(result.error.message);
-  process.exit(1);
+async function setupDatabase() {
+  const client = await pool.connect();
+  try {
+    console.log('Creating users table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log('Creating attendance table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS attendance (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        status VARCHAR(10) NOT NULL CHECK (status IN ('present', 'absent')),
+        subject VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, date)
+      );
+    `);
+
+    console.log('Database setup complete.');
+  } catch (err) {
+    console.error('Error setting up database:', err);
+  } finally {
+    await client.release();
+    await pool.end();
+  }
 }
 
-process.exit(result.status ?? 1);
+setupDatabase();

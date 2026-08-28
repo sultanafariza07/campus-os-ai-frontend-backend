@@ -1,23 +1,30 @@
-import jwt from 'jsonwebtoken'
-import type { Request, Response, NextFunction } from 'express'
-import { config } from '../config.js'
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
-export type AuthedRequest = Request & { user?: { id: number } }
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
 
-export function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
-  const header = req.header('Authorization')
-  if (!header) return res.status(401).json({ error: 'Missing Authorization header' })
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication invalid.' });
+  }
 
-  const [scheme, token] = header.split(' ')
-  if (scheme !== 'Bearer' || !token) return res.status(401).json({ error: 'Invalid Authorization header' })
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, config.JWT_SECRET) as { sub: string }
-    req.user = { id: Number(decoded.sub) }
-    if (!Number.isFinite(req.user.id)) throw new Error('Invalid user id in token')
-    next()
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' })
+    const payload = jwt.verify(token, process.env.JWT_SECRET!);
+    // Assuming the payload has an `id` property for the user ID
+    req.user = { id: (payload as any).id };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Authentication invalid.' });
+  }
+};
+
+// This extends the Express Request type to include our user property
+declare global {
+  namespace Express {
+    export interface Request {
+      user: { id: number };
+    }
   }
 }
-
