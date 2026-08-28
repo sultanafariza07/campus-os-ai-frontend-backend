@@ -295,7 +295,7 @@ export const api = {
 
   ai: {
     chat(body: { message: string }) {
-      return request<{ reply: string }>('/ai/chat', { method: 'POST', body });
+      return request<{ reply: string }>('/ai', { method: 'POST', body });
     },
   },
 
