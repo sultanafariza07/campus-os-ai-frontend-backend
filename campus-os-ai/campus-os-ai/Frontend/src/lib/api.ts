@@ -285,16 +285,10 @@ export const api = {
     list(limit = 30) {
       return request<{ attendance: AttendanceRecord[] }>(`/attendance?limit=${limit}`, { method: 'GET' })
     },
-    mark(subject: string, status: 'present' | 'absent') {
-      return request<{ attendance: AttendanceRecord }>('/attendance', {
-        method: 'POST',
-        body: { subject, status },
-      })
-    },
     markToday(present: boolean) {
-      return request<{ attendance: AttendanceRecord }>('/attendance', {
+      return request<{ attendance: AttendanceRecord }>('/attendance/today', {
         method: 'POST',
-        body: { subject: 'General', status: present ? 'present' : 'absent' },
+        body: { present },
       })
     },
   },
