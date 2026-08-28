@@ -10,17 +10,17 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
-      }
+      },
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/Backend/src/index.ts"
+      "destination": "/Backend/src/index.ts",
     },
     {
       "source": "/(.*)",
-      "destination": "/Frontend/index.html"
+      "destination": "/Frontend/index.html",
     }
   ]
 }
